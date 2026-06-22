@@ -1,0 +1,11 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "curate_tech_newsletter",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "Trigger a curation run and compile the AI/Tech & System Design newsletter digest."}]
+      }
+    }
+  ]
+}

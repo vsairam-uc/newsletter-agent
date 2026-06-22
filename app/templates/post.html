@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ newsletter.title }} - Systems & AI Research Digest{% endblock %}
+
+{% block extra_head %}
+<style>
+    .post-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .back-nav {
+        margin-bottom: 2rem;
+    }
+
+    .btn-back {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .btn-back:hover {
+        color: var(--accent-primary);
+    }
+
+    .post-header {
+        margin-bottom: 2rem;
+    }
+
+    .post-meta {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .post-title {
+        font-size: 2.25rem;
+        font-weight: 800;
+        font-family: var(--font-secondary);
+        line-height: 1.25;
+        margin-bottom: 1.5rem;
+    }
+
+    .iframe-wrapper {
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        background-color: white; /* email templates are usually light-mode optimized */
+        height: 800px;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+
+    iframe {
+        border: none;
+        width: 100%;
+        height: 100%;
+    }
+
+    .papers-breakdown {
+        margin-top: 3rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--accent-secondary);
+        padding-left: 0.75rem;
+    }
+
+    .paper-details-card {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+    }
+
+    .paper-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+    }
+
+    .paper-authors {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+    }
+
+    .score-badge {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        background: var(--gradient-primary);
+        color: white;
+        margin-bottom: 1rem;
+    }
+
+    .paper-summary {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="post-container">
+    <div class="back-nav">
+        <a href="/" class="btn-back">&larr; Back to Newsletter Index</a>
+    </div>
+
+    <div class="post-header">
+        <div class="post-meta">Published on {{ newsletter.date }}</div>
+        <h1 class="post-title">{{ newsletter.title }}</h1>
+    </div>
+
+    <!-- Render the actual HTML email sent, isolated inside an iframe -->
+    <div class="iframe-wrapper">
+        <iframe srcdoc="{{ newsletter.html_content | forceescape }}" title="Rendered Newsletter HTML"></iframe>
+    </div>
+
+    <div class="papers-breakdown">
+        <h2 class="section-title">Included Research Papers</h2>
+        {% for paper in newsletter.papers %}
+            <div class="paper-details-card">
+                <h3 class="paper-title">{{ paper.title }}</h3>
+                <div class="paper-authors">By {{ paper.authors | join(', ') }}</div>
+                <div class="score-badge">Relevance Score: {{ paper.relevance_score }}</div>
+                <p class="paper-summary"><strong>Abstract:</strong> {{ paper.summary }}</p>
+                <div style="margin-top: 1rem;">
+                    <a href="{{ paper.version_url }}" target="_blank" class="btn-back" style="font-size: 0.85rem; color: var(--accent-primary);">
+                        View on arXiv &nearr;
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

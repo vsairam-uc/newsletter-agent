@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6fa;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            background-color: #f4f6fa;
+            padding: 20px 10px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 14px;
+            color: #bfdbfe;
+            margin: 0;
+        }
+        .content {
+            padding: 25px 20px;
+        }
+        .intro {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #4b5563;
+        }
+        .paper-card {
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 25px;
+            margin-bottom: 25px;
+        }
+        .paper-card:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        .paper-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 5px 0;
+            line-height: 1.3;
+        }
+        .paper-authors {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0 0 10px 0;
+        }
+        .relevance-badge {
+            display: inline-block;
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #dbeafe;
+        }
+        .summary-section {
+            margin-bottom: 12px;
+        }
+        .summary-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+        .summary-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #4b5563;
+            margin: 0;
+        }
+        .btn-link {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #f3f4f6;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #6b7280;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>Systems & AI Research Digest</h1>
+                <p>Curated Curation Run: {{ date }}</p>
+            </div>
+            
+            <div class="content">
+                <p class="intro">
+                    Hello! Here is your curated digest of the latest computer science and AI research papers from arXiv, customized to your interest profile.
+                </p>
+                
+                {% for paper in papers %}
+                    <div class="paper-card">
+                        <h2 class="paper-title">{{ paper.title }}</h2>
+                        <p class="paper-authors">By {{ paper.authors | join(', ') }}</p>
+                        <div class="relevance-badge">Relevance Score: {{ paper.relevance_score }}</div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Problem Statement</div>
+                            <p class="summary-text">{{ paper.problem_statement }}</p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Proposed System Architecture</div>
+                            <p class="summary-text">{{ paper.proposed_architecture }}</p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Key Trade-offs / Limitations</div>
+                            <p class="summary-text">{{ paper.tradeoffs }}</p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Real-World Industry Application</div>
+                            <p class="summary-text">{{ paper.industry_application }}</p>
+                        </div>
+                        
+                        <a href="{{ paper.pdf_url }}" class="btn-link" target="_blank">Download PDF from arXiv &rarr;</a>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="footer">
+                <p>This email was automatically generated and sent to you by your newsletter curation agent.</p>
+                <p><a href="#">Manage Subscriptions</a> | <a href="#">Unsubscribe</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

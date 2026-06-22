@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Archives - System Design & AI Research Newsletter{% endblock %}
+
+{% block extra_head %}
+<style>
+    .hero-section {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 800;
+        font-family: var(--font-secondary);
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+
+    .hero-title span {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .archives-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        border-left: 4px solid var(--accent-primary);
+        padding-left: 0.75rem;
+    }
+
+    .archives-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+
+    .newsletter-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+    }
+
+    .newsletter-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-primary);
+        box-shadow: 0 12px 30px rgba(59, 130, 246, 0.12);
+    }
+
+    .card-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        line-height: 1.3;
+    }
+
+    .card-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .card-title a:hover {
+        color: var(--accent-primary);
+    }
+
+    .card-papers-preview {
+        flex: 1;
+        margin-bottom: 1.5rem;
+    }
+
+    .paper-item {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .paper-bullet {
+        color: var(--accent-secondary);
+        font-weight: bold;
+    }
+
+    .card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--card-border);
+        padding-top: 1rem;
+        margin-top: auto;
+    }
+
+    .btn-read-more {
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .btn-read-more:hover {
+        color: var(--accent-secondary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background-color: var(--card-bg);
+        border: 1px dashed var(--card-border);
+        border-radius: var(--border-radius);
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+    }
+
+    .subscription-section {
+        max-width: 600px;
+        margin: 0 auto 4rem auto;
+        text-align: center;
+        position: relative;
+    }
+    
+    .subscription-card {
+        padding: 2.5rem 2rem;
+        background: radial-gradient(100% 100% at 0% 0%, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.03) 100%), var(--card-bg);
+        border: 1px solid var(--card-border);
+    }
+    
+    .subscription-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-family: var(--font-secondary);
+    }
+    
+    .subscription-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .subscription-form {
+        display: flex;
+        gap: 0.75rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .subscription-input {
+        flex: 1;
+        padding: 0.75rem 1.25rem;
+        border-radius: 24px;
+        border: 1px solid var(--card-border);
+        background-color: rgba(0, 0, 0, 0.2);
+        color: var(--text-color);
+        font-family: var(--font-primary);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.25s ease;
+    }
+    
+    .subscription-input:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+    
+    .subscription-message {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .message-success {
+        color: #10b981;
+    }
+    
+    .message-error {
+        color: #ef4444;
+    }
+    
+    @media (max-width: 600px) {
+        .subscription-form {
+            flex-direction: column;
+        }
+        .subscription-input {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1 class="hero-title">Academic Research, <span>Simplified</span></h1>
+    <p class="hero-subtitle">Discover, summarize, and archive top computer science and AI research papers from arXiv automatically.</p>
+</div>
+
+<div class="subscription-section">
+    <div class="glass-card subscription-card">
+        <h2 class="subscription-title">Subscribe to the Digest</h2>
+        <p class="subscription-subtitle">Get weekly curated academic research papers on Systems & AI directly in your inbox.</p>
+        <form id="subscribe-form" class="subscription-form">
+            <input type="email" id="subscribe-email" class="subscription-input" placeholder="Enter your email address" required>
+            <button type="submit" class="btn-primary subscription-btn">Subscribe</button>
+        </form>
+        <div id="subscribe-message" class="subscription-message" style="display: none;"></div>
+    </div>
+</div>
+
+<h2 class="archives-title">Curated Newsletters</h2>
+
+{% if newsletters %}
+    <div class="archives-grid">
+        {% for newsletter in newsletters %}
+            <div class="glass-card newsletter-card">
+                <div class="card-meta">
+                    <span>📅 {{ newsletter.date.split(' ')[0] }}</span>
+                    <span>•</span>
+                    <span>📚 {{ newsletter.papers|length }} papers</span>
+                </div>
+                <h3 class="card-title">
+                    <a href="/newsletter/{{ newsletter.id }}">{{ newsletter.title }}</a>
+                </h3>
+                <div class="card-papers-preview">
+                    {% for paper in newsletter.papers[:3] %}
+                        <div class="paper-item">
+                            <span class="paper-bullet">▪</span>
+                            <span>{{ paper.title }}</span>
+                        </div>
+                    {% endfor %}
+                    {% if newsletter.papers|length > 3 %}
+                        <div class="paper-item" style="font-style: italic;">
+                            <span>and {{ newsletter.papers|length - 3 }} more...</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="/newsletter/{{ newsletter.id }}" class="btn-read-more">Read Digest &rarr;</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <h3>No publications yet</h3>
+        <p>Start the pipeline by clicking the "Trigger Run" button in the navigation bar to fetch, summarize, and archive recent papers.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('subscribe-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('subscribe-email');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const msgDiv = document.getElementById('subscribe-message');
+        
+        const email = emailInput.value.trim();
+        if (!email) return;
+        
+        submitBtn.disabled = true;
+        const originalBtnHTML = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Subscribing...';
+        msgDiv.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email }),
+            });
+            const data = await response.json();
+            
+            msgDiv.style.display = 'block';
+            if (response.ok) {
+                msgDiv.className = 'subscription-message message-success';
+                msgDiv.textContent = data.message || 'Successfully subscribed!';
+                emailInput.value = '';
+            } else {
+                msgDiv.className = 'subscription-message message-error';
+                msgDiv.textContent = data.detail || data.error || 'An error occurred. Please try again.';
+            }
+        } catch (err) {
+            msgDiv.style.display = 'block';
+            msgDiv.className = 'subscription-message message-error';
+            msgDiv.textContent = 'Connection error: ' + err.message;
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHTML;
+        }
+    });
+</script>
+{% endblock %}

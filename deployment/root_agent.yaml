@@ -1,0 +1,2 @@
+name: deployment_dummy
+description: Dummy agent to prevent playground scanning crashes.
