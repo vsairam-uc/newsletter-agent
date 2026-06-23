@@ -33,22 +33,68 @@
     .archives-title {
         font-size: 1.75rem;
         font-weight: 700;
-        margin-bottom: 2rem;
+        margin: 0 auto 2rem auto;
+        max-width: 800px;
         border-left: 4px solid var(--accent-primary);
         padding-left: 0.75rem;
     }
 
     .archives-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 800px;
+        margin: 0 auto;
     }
 
     .newsletter-card {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        height: auto;
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+    }
+
+    /* Pagination Styles */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin: 3rem auto 2rem auto;
+        max-width: 800px;
+    }
+
+    .btn-pagination {
+        background-color: var(--button-bg);
+        border: 1px solid var(--card-border);
+        color: var(--text-color);
+        text-decoration: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 24px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .btn-pagination:hover:not(.disabled) {
+        background-color: var(--button-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .btn-pagination.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .page-info {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        font-weight: 500;
     }
 
     .newsletter-card:hover {
@@ -270,6 +316,24 @@
             </div>
         {% endfor %}
     </div>
+
+    {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+                <a href="?page={{ page - 1 }}" class="btn-pagination">&larr; Previous</a>
+            {% else %}
+                <span class="btn-pagination disabled">&larr; Previous</span>
+            {% endif %}
+            
+            <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+            
+            {% if page < total_pages %}
+                <a href="?page={{ page + 1 }}" class="btn-pagination">Next &rarr;</a>
+            {% else %}
+                <span class="btn-pagination disabled">Next &rarr;</span>
+            {% endif %}
+        </div>
+    {% endif %}
 {% else %}
     <div class="empty-state">
         <h3>No publications yet</h3>

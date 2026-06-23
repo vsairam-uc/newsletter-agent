@@ -43,28 +43,60 @@ async def startup_event():
 
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request, page: int = 1):
     """Render home page with all archived publications."""
     try:
         newsletters = get_newsletters()
+        per_page = 5
+        total_newsletters = len(newsletters)
+        total_pages = max(1, (total_newsletters + per_page - 1) // per_page)
+        
+        # Clamp page number
+        page = max(1, min(page, total_pages))
+        
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_newsletters = newsletters[start_idx:end_idx]
+        
         return templates.TemplateResponse(
             request=request,
             name="home.html",
-            context={"newsletters": newsletters, "show_trigger": False},
+            context={
+                "newsletters": paginated_newsletters,
+                "show_trigger": False,
+                "page": page,
+                "total_pages": total_pages,
+            },
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e!s}") from e
 
 
 @app.get("/test", response_class=HTMLResponse)
-async def read_test(request: Request):
+async def read_test(request: Request, page: int = 1):
     """Render home page with all archived publications, showing the trigger run button."""
     try:
         newsletters = get_newsletters()
+        per_page = 5
+        total_newsletters = len(newsletters)
+        total_pages = max(1, (total_newsletters + per_page - 1) // per_page)
+        
+        # Clamp page number
+        page = max(1, min(page, total_pages))
+        
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_newsletters = newsletters[start_idx:end_idx]
+        
         return templates.TemplateResponse(
             request=request,
             name="home.html",
-            context={"newsletters": newsletters, "show_trigger": True},
+            context={
+                "newsletters": paginated_newsletters,
+                "show_trigger": True,
+                "page": page,
+                "total_pages": total_pages,
+            },
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e!s}") from e

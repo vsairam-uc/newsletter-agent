@@ -110,14 +110,16 @@ def is_paper_processed(arxiv_id: str) -> bool:
 
 
 def clear_processed_papers_for_today():
-    """Clear papers processed today (UTC date)."""
+    """Clear papers processed today (within the last 12 hours) to allow re-running."""
     init_db()
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    from datetime import timedelta
+    limit_str = (datetime.utcnow() - timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "DELETE FROM processed_papers WHERE added_at LIKE ?",
-        (f"{today_str}%",),
+        "DELETE FROM processed_papers WHERE added_at >= ?",
+        (limit_str,),
     )
     conn.commit()
     conn.close()

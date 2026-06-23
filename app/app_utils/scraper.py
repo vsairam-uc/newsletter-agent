@@ -28,7 +28,12 @@ class RelevanceScore(BaseModel):
 
 def search_arxiv_papers(max_results: int = 15) -> list[dict]:
     """Search arXiv for recent papers in CS systems and AI categories."""
-    client = arxiv.Client()
+    # Configure a custom client with delay and retries to prevent HTTP 429
+    client = arxiv.Client(
+        page_size=max_results,
+        delay_seconds=3.0,
+        num_retries=5
+    )
     # Query for Distributed (cs.DC), DB (cs.DB), SE (cs.SE), AI (cs.AI), LG (cs.LG)
     query = "cat:cs.DC OR cat:cs.DB OR cat:cs.SE OR cat:cs.AI OR cat:cs.LG"
 
