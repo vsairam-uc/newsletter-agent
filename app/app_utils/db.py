@@ -8,6 +8,30 @@ from google.cloud import storage
 # Local SQLite DB location
 DB_PATH = os.path.join(os.path.dirname(__file__), "newsletter.db")
 
+_db_downloaded = False
+
+
+def download_db_from_gcs(bucket_name: str):
+    """Download newsletter.db from GCS to local DB_PATH."""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob("database/newsletter.db")
+    if blob.exists():
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        blob.download_to_filename(DB_PATH)
+        print(f"Downloaded database from GCS to {DB_PATH}")
+
+
+def upload_db_to_gcs(bucket_name: str):
+    """Upload local newsletter.db to GCS."""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob("database/newsletter.db")
+    if os.path.exists(DB_PATH):
+        blob.upload_from_filename(DB_PATH)
+        print(f"Uploaded database to GCS from {DB_PATH}")
+
+
 
 def get_db_connection():
     """Create a connection to the local SQLite database."""
@@ -18,6 +42,15 @@ def get_db_connection():
 
 def init_db():
     """Initialize the SQLite database schema."""
+    global _db_downloaded
+    bucket_name = os.environ.get("LOGS_BUCKET_NAME")
+    if bucket_name and not _db_downloaded:
+        try:
+            download_db_from_gcs(bucket_name)
+            _db_downloaded = True
+        except Exception as e:
+            print(f"Warning: Failed to download database from GCS: {e}")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -89,11 +122,12 @@ def save_newsletter(title: str, html_content: str, papers: list[dict]) -> int:
     bucket_name = os.environ.get("LOGS_BUCKET_NAME")
     if bucket_name:
         try:
+            upload_db_to_gcs(bucket_name)
             upload_newsletter_to_gcs(
                 bucket_name, newsletter_id, date_str, title, html_content, papers
             )
         except Exception as e:
-            print(f"Warning: Failed to sync newsletter {newsletter_id} to GCS: {e}")
+            print(f"Warning: Failed to sync newsletter {newsletter_id} or DB to GCS: {e}")
 
     return newsletter_id
 
@@ -124,6 +158,13 @@ def clear_processed_papers_for_today():
     conn.commit()
     conn.close()
 
+    bucket_name = os.environ.get("LOGS_BUCKET_NAME")
+    if bucket_name:
+        try:
+            upload_db_to_gcs(bucket_name)
+        except Exception as e:
+            print(f"Warning: Failed to upload database to GCS after clearing papers: {e}")
+
 
 def add_subscriber(email: str) -> bool:
     """Add a new subscriber or reactivate an unsubscribed one."""
@@ -138,6 +179,9 @@ def add_subscriber(email: str) -> bool:
             (email.strip().lower(), date_str, date_str),
         )
         conn.commit()
+        bucket_name = os.environ.get("LOGS_BUCKET_NAME")
+        if bucket_name:
+            upload_db_to_gcs(bucket_name)
         return True
     except Exception as e:
         print(f"Error adding subscriber {email}: {e}")
@@ -157,6 +201,9 @@ def remove_subscriber(email: str) -> bool:
             (email.strip().lower(),),
         )
         conn.commit()
+        bucket_name = os.environ.get("LOGS_BUCKET_NAME")
+        if bucket_name:
+            upload_db_to_gcs(bucket_name)
         return True
     except Exception as e:
         print(f"Error removing subscriber {email}: {e}")
