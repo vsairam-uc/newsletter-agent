@@ -228,9 +228,11 @@
                 <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()">
                     <span id="theme-icon">🌙</span> <span id="theme-text">Dark</span>
                 </button>
+                {% if show_trigger %}
                 <button class="btn-primary" id="trigger-curation-btn">
                     <span>⚡</span> Trigger Run
                 </button>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -270,34 +272,36 @@
         }
 
         // Trigger Run Button Handler
-        document.getElementById('trigger-curation-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('trigger-curation-btn');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span>⏳</span> Curating...';
-            btn.style.opacity = '0.7';
+        const triggerBtn = document.getElementById('trigger-curation-btn');
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', async () => {
+                const originalText = triggerBtn.innerHTML;
+                triggerBtn.disabled = true;
+                triggerBtn.innerHTML = '<span>⏳</span> Curating...';
+                triggerBtn.style.opacity = '0.7';
 
-            try {
-                const response = await fetch('/api/trigger', { method: 'POST' });
-                const data = await response.json();
-                if (response.ok) {
-                    if (data.status === "skipped") {
-                        alert('Curation complete: No new relevant papers found at this time.');
+                try {
+                    const response = await fetch('/api/trigger', { method: 'POST' });
+                    const data = await response.json();
+                    if (response.ok) {
+                        if (data.status === "skipped") {
+                            alert('Curation complete: No new relevant papers found at this time.');
+                        } else {
+                            alert('Newsletter successfully curated and dispatched!\nTitle: ' + data.title);
+                        }
+                        window.location.reload();
                     } else {
-                        alert('Newsletter successfully curated and dispatched!\nTitle: ' + data.title);
+                        alert('Error running curation: ' + (data.detail || data.error));
                     }
-                    window.location.reload();
-                } else {
-                    alert('Error running curation: ' + (data.detail || data.error));
+                } catch (err) {
+                    alert('Connection error: ' + err.message);
+                } finally {
+                    triggerBtn.disabled = false;
+                    triggerBtn.innerHTML = originalText;
+                    triggerBtn.style.opacity = '1';
                 }
-            } catch (err) {
-                alert('Connection error: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                btn.style.opacity = '1';
-            }
-        });
+            });
+        }
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>

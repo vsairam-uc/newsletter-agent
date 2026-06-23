@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from app.agent import app as adk_app
 from app.app_utils.db import (
     add_subscriber,
+    clear_processed_papers_for_today,
     get_newsletter,
     get_newsletters,
     init_db,
@@ -47,7 +48,23 @@ async def read_root(request: Request):
     try:
         newsletters = get_newsletters()
         return templates.TemplateResponse(
-            request=request, name="home.html", context={"newsletters": newsletters}
+            request=request,
+            name="home.html",
+            context={"newsletters": newsletters, "show_trigger": False},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e!s}") from e
+
+
+@app.get("/test", response_class=HTMLResponse)
+async def read_test(request: Request):
+    """Render home page with all archived publications, showing the trigger run button."""
+    try:
+        newsletters = get_newsletters()
+        return templates.TemplateResponse(
+            request=request,
+            name="home.html",
+            context={"newsletters": newsletters, "show_trigger": True},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e!s}") from e
@@ -68,6 +85,9 @@ async def read_newsletter(request: Request, newsletter_id: int):
 async def trigger_curation():
     """Programmatically run the ADK 2.0 multi-agent workflow to generate and dispatch newsletter."""
     try:
+        # Clear papers processed today to allow re-running
+        clear_processed_papers_for_today()
+
         runner = InMemoryRunner(app=adk_app)
 
         # Create a new run session

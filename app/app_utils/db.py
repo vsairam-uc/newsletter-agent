@@ -109,6 +109,20 @@ def is_paper_processed(arxiv_id: str) -> bool:
     return row is not None
 
 
+def clear_processed_papers_for_today():
+    """Clear papers processed today (UTC date)."""
+    init_db()
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM processed_papers WHERE added_at LIKE ?",
+        (f"{today_str}%",),
+    )
+    conn.commit()
+    conn.close()
+
+
 def add_subscriber(email: str) -> bool:
     """Add a new subscriber or reactivate an unsubscribed one."""
     init_db()
