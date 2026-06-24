@@ -3,8 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
     <title>{{ title }}</title>
     <style>
+        :root {
+            color-scheme: light dark;
+            supported-color-schemes: light dark;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f4f6fa;
@@ -125,6 +131,120 @@
             color: #6b7280;
             text-decoration: underline;
         }
+
+        /* Dark Mode Support (Email Clients) */
+        @media (prefers-color-scheme: dark) {
+            body, .wrapper {
+                background-color: #0b0f19 !important;
+                color: #f3f4f6 !important;
+            }
+            .container {
+                background-color: #111827 !important;
+                border-color: #1f2937 !important;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+            }
+            .header {
+                background-color: #1e293b !important;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+            }
+            .header h1 {
+                color: #ffffff !important;
+            }
+            .header p {
+                color: #94a3b8 !important;
+            }
+            .intro {
+                color: #d1d5db !important;
+            }
+            .paper-card {
+                border-bottom: 1px solid #1f2937 !important;
+            }
+            .paper-title {
+                color: #ffffff !important;
+            }
+            .paper-authors {
+                color: #9ca3af !important;
+            }
+            .relevance-badge {
+                background-color: rgba(59, 130, 246, 0.15) !important;
+                color: #60a5fa !important;
+                border-color: rgba(59, 130, 246, 0.3) !important;
+            }
+            .summary-label {
+                color: #9ca3af !important;
+            }
+            .summary-text {
+                color: #d1d5db !important;
+            }
+            .btn-link {
+                background-color: #3b82f6 !important;
+                color: #ffffff !important;
+            }
+            .footer {
+                background-color: #0f172a !important;
+                border-top: 1px solid #1f2937 !important;
+                color: #6b7280 !important;
+            }
+            .footer a {
+                color: #9ca3af !important;
+            }
+        }
+
+        /* Class-based Dark Mode (Web Application) */
+        body.dark-theme, body.dark-theme .wrapper {
+            background-color: #0b0f19 !important;
+            color: #f3f4f6 !important;
+        }
+        body.dark-theme .container {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+        }
+        body.dark-theme .header {
+            background-color: #1e293b !important;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        }
+        body.dark-theme .header h1 {
+            color: #ffffff !important;
+        }
+        body.dark-theme .header p {
+            color: #94a3b8 !important;
+        }
+        body.dark-theme .intro {
+            color: #d1d5db !important;
+        }
+        body.dark-theme .paper-card {
+            border-bottom: 1px solid #1f2937 !important;
+        }
+        body.dark-theme .paper-title {
+            color: #ffffff !important;
+        }
+        body.dark-theme .paper-authors {
+            color: #9ca3af !important;
+        }
+        body.dark-theme .relevance-badge {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            color: #60a5fa !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        body.dark-theme .summary-label {
+            color: #9ca3af !important;
+        }
+        body.dark-theme .summary-text {
+            color: #d1d5db !important;
+        }
+        body.dark-theme .btn-link {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        body.dark-theme .footer {
+            background-color: #0f172a !important;
+            border-top: 1px solid #1f2937 !important;
+            color: #6b7280 !important;
+        }
+        body.dark-theme .footer a {
+            color: #9ca3af !important;
+        }
     </style>
 </head>
 <body>
@@ -144,7 +264,11 @@
                     <div class="paper-card">
                         <h2 class="paper-title">{{ paper.title }}</h2>
                         <p class="paper-authors">By {{ paper.authors | join(', ') }}</p>
-                        <div class="relevance-badge">Relevance Score: {{ paper.relevance_score }}</div>
+                        {% if paper.is_classic %}
+                            <div class="relevance-badge classic-badge" style="background-color: #fef3c7; color: #d97706; border: 1px solid #fde68a;">Classic / Popular Paper</div>
+                        {% else %}
+                            <div class="relevance-badge">Relevance Score: {{ paper.relevance_score }}</div>
+                        {% endif %}
                         
                         <div class="summary-section">
                             <div class="summary-label">Problem Statement</div>

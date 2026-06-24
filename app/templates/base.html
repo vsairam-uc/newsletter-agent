@@ -257,6 +257,9 @@
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeUI(newTheme);
+            if (typeof syncIframeTheme === 'function') {
+                syncIframeTheme();
+            }
         }
 
         function updateThemeUI(theme) {

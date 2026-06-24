@@ -41,6 +41,7 @@ from app.app_utils.scraper import (
     download_and_extract_pdf_text,
     score_paper_relevance,
     search_arxiv_papers,
+    search_classic_arxiv_papers,
 )
 
 # Ensure Application Default Credentials context is set properly
@@ -72,35 +73,71 @@ def relevance_filter(ctx: Context, node_input: Any) -> list[dict]:
     print(f"Starting relevance filter using interest profile: {interest_profile}")
 
     # 1. Fetch recent papers from arXiv
-    all_papers = search_arxiv_papers(max_results=15)
+    all_papers = search_arxiv_papers(max_results=20)
     print(f"Fetched {len(all_papers)} papers from arXiv.")
 
     # 2. Filter out already processed papers
     new_papers = [p for p in all_papers if not is_paper_processed(p["arxiv_id"])]
     print(f"Found {len(new_papers)} new papers that haven't been curated yet.")
 
-    # 3. Score relevance using Gemini
+    # 3. Score relevance of recent papers using Gemini
     relevant_papers = []
+    candidate_papers = []
     for paper in new_papers:
         score_res = score_paper_relevance(
             paper["title"], paper["summary"], interest_profile
         )
         score = score_res.relevance_score
-        print(f"Paper: '{paper['title']}' | Score: {score}")
+        print(f"Recent Paper: '{paper['title']}' | Score: {score}")
+        
+        paper["relevance_score"] = score
+        paper["relevance_reason"] = score_res.reason
+        paper["is_classic"] = False
 
-        if score >= 0.75:
-            paper["relevance_score"] = score
-            paper["relevance_reason"] = score_res.reason
+        if score >= 0.65:
             relevant_papers.append(paper)
+        else:
+            candidate_papers.append(paper)
 
-            # Limit to top 5 papers per run to keep digest readable
-            if len(relevant_papers) >= 5:
+    # 4. Fetch and score classic papers
+    classic_papers = search_classic_arxiv_papers(max_results=3)
+    new_classic_papers = [p for p in classic_papers if not is_paper_processed(p["arxiv_id"])]
+    print(f"Found {len(new_classic_papers)} new classic/older papers.")
+
+    relevant_classics = []
+    for paper in new_classic_papers:
+        score_res = score_paper_relevance(
+            paper["title"], paper["summary"], interest_profile
+        )
+        score = score_res.relevance_score
+        print(f"Classic Paper: '{paper['title']}' | Score: {score}")
+
+        paper["relevance_score"] = score
+        paper["relevance_reason"] = score_res.reason
+
+        # Slightly more lenient threshold for classic papers since they are already known classics
+        if score >= 0.60:
+            relevant_classics.append(paper)
+        else:
+            candidate_papers.append(paper)
+
+    # Combine recent and classic relevant papers
+    combined_relevant = relevant_papers + relevant_classics
+
+    # 5. Fallback mechanism: if total papers are fewer than 3, select next best candidate papers
+    if len(combined_relevant) < 3 and candidate_papers:
+        # Sort remaining candidates by score descending
+        candidate_papers.sort(key=lambda x: x.get("relevance_score", 0.0), reverse=True)
+        for paper in candidate_papers:
+            combined_relevant.append(paper)
+            print(f"Fallback: added paper '{paper['title']}' with score {paper['relevance_score']}")
+            if len(combined_relevant) >= 3:
                 break
 
-    print(
-        f"Relevance filter selected {len(relevant_papers)} papers exceeding threshold."
-    )
-    return relevant_papers
+    # Limit to top 5 papers per run to keep digest readable
+    final_papers = combined_relevant[:5]
+    print(f"Relevance filter selected {len(final_papers)} papers.")
+    return final_papers
 
 
 @node

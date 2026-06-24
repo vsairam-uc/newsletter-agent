@@ -4,9 +4,28 @@ import sqlite3
 from datetime import datetime
 
 from google.cloud import storage
+from jinja2 import Environment, FileSystemLoader
 
 # Local SQLite DB location
 DB_PATH = os.path.join(os.path.dirname(__file__), "newsletter.db")
+
+
+def render_newsletter_html(title: str, date_str: str, papers: list[dict]) -> str:
+    """Render the HTML content of a newsletter dynamically using the Jinja2 template."""
+    try:
+        # Resolve templates directory path
+        templates_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates"
+        )
+        env = Environment(loader=FileSystemLoader(templates_dir))
+        template = env.get_template("email.html")
+        # Ensure date displays date part only if it contains time info
+        display_date = date_str.split(" ")[0] if date_str else date_str
+        return template.render(title=title, date=display_date, papers=papers)
+    except Exception as e:
+        print(f"Error rendering newsletter HTML dynamically: {e}")
+        return ""
+
 
 _db_downloaded = False
 
@@ -60,7 +79,6 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
             title TEXT NOT NULL,
-            html_content TEXT NOT NULL,
             papers_json TEXT NOT NULL
         )
     """)
@@ -98,8 +116,8 @@ def save_newsletter(title: str, html_content: str, papers: list[dict]) -> int:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO newsletters (date, title, html_content, papers_json) VALUES (?, ?, ?, ?)",
-        (date_str, title, html_content, papers_json),
+        "INSERT INTO newsletters (date, title, papers_json) VALUES (?, ?, ?)",
+        (date_str, title, papers_json),
     )
     newsletter_id = cursor.lastrowid
 
@@ -242,20 +260,22 @@ def get_newsletters() -> list[dict]:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, date, title, html_content, papers_json FROM newsletters ORDER BY date DESC"
+        "SELECT id, date, title, papers_json FROM newsletters ORDER BY date DESC"
     )
     rows = cursor.fetchall()
     conn.close()
 
     newsletters = []
     for row in rows:
+        papers = json.loads(row["papers_json"])
+        html_content = render_newsletter_html(row["title"], row["date"], papers)
         newsletters.append(
             {
                 "id": row["id"],
                 "date": row["date"],
                 "title": row["title"],
-                "html_content": row["html_content"],
-                "papers": json.loads(row["papers_json"]),
+                "html_content": html_content,
+                "papers": papers,
             }
         )
     return newsletters
@@ -267,19 +287,21 @@ def get_newsletter(newsletter_id: int) -> dict | None:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, date, title, html_content, papers_json FROM newsletters WHERE id = ?",
+        "SELECT id, date, title, papers_json FROM newsletters WHERE id = ?",
         (newsletter_id,),
     )
     row = cursor.fetchone()
     conn.close()
 
     if row:
+        papers = json.loads(row["papers_json"])
+        html_content = render_newsletter_html(row["title"], row["date"], papers)
         return {
             "id": row["id"],
             "date": row["date"],
             "title": row["title"],
-            "html_content": row["html_content"],
-            "papers": json.loads(row["papers_json"]),
+            "html_content": html_content,
+            "papers": papers,
         }
 
     # Fallback to GCS
@@ -304,20 +326,16 @@ def upload_newsletter_to_gcs(
     html_content: str,
     papers: list[dict],
 ):
-    """Sync newsletter assets and a metadata index file to Google Cloud Storage."""
+    """Sync newsletter metadata and update the index file in Google Cloud Storage."""
     client = storage.Client()
     bucket = client.bucket(bucket_name)
 
-    # Save the rendered HTML file
-    html_blob = bucket.blob(f"newsletters/{newsletter_id}.html")
-    html_blob.upload_from_string(html_content, content_type="text/html")
-
-    # Save paper metadata
+    # Save paper metadata (do not save/upload raw HTML blob)
     meta_blob = bucket.blob(f"newsletters/{newsletter_id}.json")
     metadata = {"id": newsletter_id, "date": date_str, "title": title, "papers": papers}
     meta_blob.upload_from_string(json.dumps(metadata), content_type="application/json")
 
-    # Update GCS newsletters index
+    # Update GCS newsletters index (including papers inside the index to avoid N+1 requests)
     index_blob = bucket.blob("newsletters/index.json")
     index_data = []
     if index_blob.exists():
@@ -326,14 +344,16 @@ def upload_newsletter_to_gcs(
         except Exception:
             pass
 
-    index_data.insert(0, {"id": newsletter_id, "date": date_str, "title": title})
+    index_data.insert(
+        0, {"id": newsletter_id, "date": date_str, "title": title, "papers": papers}
+    )
     index_blob.upload_from_string(
         json.dumps(index_data), content_type="application/json"
     )
 
 
 def get_newsletters_from_gcs(bucket_name: str) -> list[dict]:
-    """Retrieve newsletter index from GCS."""
+    """Retrieve newsletter index from GCS and render HTML on the fly."""
     client = storage.Client()
     bucket = client.bucket(bucket_name)
     index_blob = bucket.blob("newsletters/index.json")
@@ -344,18 +364,18 @@ def get_newsletters_from_gcs(bucket_name: str) -> list[dict]:
     index_data = json.loads(index_blob.download_as_text())
     newsletters = []
     for item in index_data:
-        # Load the HTML content
-        html_blob = bucket.blob(f"newsletters/{item['id']}.html")
-        html_content = html_blob.download_as_text() if html_blob.exists() else ""
+        # If papers isn't cached in the index entry, attempt to load it
+        papers = item.get("papers")
+        if papers is None:
+            meta_blob = bucket.blob(f"newsletters/{item['id']}.json")
+            papers = []
+            if meta_blob.exists():
+                try:
+                    papers = json.loads(meta_blob.download_as_text()).get("papers", [])
+                except Exception:
+                    pass
 
-        # Load papers list
-        meta_blob = bucket.blob(f"newsletters/{item['id']}.json")
-        papers = []
-        if meta_blob.exists():
-            try:
-                papers = json.loads(meta_blob.download_as_text()).get("papers", [])
-            except Exception:
-                pass
+        html_content = render_newsletter_html(item["title"], item["date"], papers)
 
         newsletters.append(
             {
@@ -370,23 +390,23 @@ def get_newsletters_from_gcs(bucket_name: str) -> list[dict]:
 
 
 def get_newsletter_from_gcs(bucket_name: str, newsletter_id: int) -> dict | None:
-    """Retrieve a single newsletter from GCS."""
+    """Retrieve a single newsletter metadata from GCS and render HTML dynamically."""
     client = storage.Client()
     bucket = client.bucket(bucket_name)
 
     meta_blob = bucket.blob(f"newsletters/{newsletter_id}.json")
-    html_blob = bucket.blob(f"newsletters/{newsletter_id}.html")
 
-    if not meta_blob.exists() or not html_blob.exists():
+    if not meta_blob.exists():
         return None
 
     meta = json.loads(meta_blob.download_as_text())
-    html_content = html_blob.download_as_text()
+    papers = meta.get("papers", [])
+    html_content = render_newsletter_html(meta["title"], meta["date"], papers)
 
     return {
         "id": newsletter_id,
         "date": meta["date"],
         "title": meta["title"],
         "html_content": html_content,
-        "papers": meta.get("papers", []),
+        "papers": papers,
     }

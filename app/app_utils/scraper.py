@@ -11,7 +11,8 @@ from pypdf import PdfReader
 # Default User Interest Profile
 DEFAULT_INTEREST_PROFILE = (
     "System Design, Distributed Systems, Databases, Software Engineering, "
-    "AI/ML Infrastructure, Large Language Model optimization, and Deep Learning Systems."
+    "AI/ML Infrastructure, Large Language Models (LLM), Generative AI (GenAI), "
+    "and Artificial Intelligence and Machine Learning (AI and ML)."
 )
 
 
@@ -82,8 +83,9 @@ def score_paper_relevance(
     {abstract}
 
     Provide a score between 0.0 (completely irrelevant) and 1.0 (highly relevant, a must-read).
-    Be conservative with high scores; only award >0.75 to papers that directly focus on systems architecture,
-    large scale distributed systems, database design, or AI engineering infrastructure.
+    Be moderately lenient; award scores above 0.65 to papers that directly focus on systems architecture,
+    large scale distributed systems, database design, software engineering, AI/ML infrastructure,
+    Large Language Models (LLM), Generative AI (GenAI), or AI and ML.
     """
 
     # Use gemini-3.5-flash for fast and cost-effective relevance classification
@@ -139,3 +141,53 @@ def download_and_extract_pdf_text(pdf_url: str, max_chars: int = 40000) -> str:
     except Exception as e:
         print(f"Error downloading or parsing PDF from {pdf_url}: {e}")
         return ""
+
+
+def search_classic_arxiv_papers(max_results: int = 3) -> list[dict]:
+    """Search arXiv for popular/classic older papers by sorting by relevance on historical key topics."""
+    import random
+    classic_topics = [
+        "MapReduce distributed database",
+        "Raft Paxos consensus distributed",
+        "Google Spanner database",
+        "Transformer Attention deep learning",
+        "BERT pre-training language models",
+        "ResNet deep residual learning",
+        "Adam optimizer deep learning",
+        "FlashAttention fast attention"
+    ]
+    # Pick a random classic topic to keep recommendations diverse
+    topic = random.choice(classic_topics)
+    
+    # Configure a custom client with delay and retries
+    client = arxiv.Client(
+        page_size=max_results,
+        delay_seconds=3.0,
+        num_retries=5
+    )
+    
+    # Query for classic papers using relevance sorting
+    search = arxiv.Search(
+        query=topic,
+        max_results=max_results,
+        sort_by=arxiv.SortCriterion.Relevance,
+    )
+
+    papers = []
+    try:
+        for result in client.results(search):
+            papers.append(
+                {
+                    "arxiv_id": result.entry_id.split("/abs/")[-1].split("v")[0],
+                    "version_url": result.entry_id,
+                    "title": result.title,
+                    "summary": result.summary,
+                    "authors": [author.name for author in result.authors],
+                    "pdf_url": result.pdf_url,
+                    "published": result.published.isoformat(),
+                    "is_classic": True,
+                }
+            )
+    except Exception as e:
+        print(f"Error querying classic arXiv papers: {e}")
+    return papers
