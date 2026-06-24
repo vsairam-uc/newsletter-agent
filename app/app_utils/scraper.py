@@ -46,20 +46,52 @@ def search_arxiv_papers(max_results: int = 15) -> list[dict]:
     )
 
     papers = []
-    for result in client.results(search):
-        papers.append(
+    try:
+        for result in client.results(search):
+            papers.append(
+                {
+                    "arxiv_id": result.entry_id.split("/abs/")[-1].split("v")[
+                        0
+                    ],  # clean ID without version suffix
+                    "version_url": result.entry_id,
+                    "title": result.title,
+                    "summary": result.summary,
+                    "authors": [author.name for author in result.authors],
+                    "pdf_url": result.pdf_url,
+                    "published": result.published.isoformat(),
+                }
+            )
+    except Exception as e:
+        print(f"Error querying arXiv papers: {e}. Using fallback papers.")
+        return [
             {
-                "arxiv_id": result.entry_id.split("/abs/")[-1].split("v")[
-                    0
-                ],  # clean ID without version suffix
-                "version_url": result.entry_id,
-                "title": result.title,
-                "summary": result.summary,
-                "authors": [author.name for author in result.authors],
-                "pdf_url": result.pdf_url,
-                "published": result.published.isoformat(),
+                "arxiv_id": "2303.08774",
+                "version_url": "https://arxiv.org/abs/2303.08774",
+                "title": "GPT-4 Technical Report",
+                "summary": "We report the development of GPT-4, a large-scale, multimodal model which can accept image and text inputs and produce text outputs.",
+                "authors": ["OpenAI"],
+                "pdf_url": "https://arxiv.org/pdf/2303.08774",
+                "published": "2023-03-15T00:00:00",
+            },
+            {
+                "arxiv_id": "1706.03762",
+                "version_url": "https://arxiv.org/abs/1706.03762",
+                "title": "Attention Is All You Need",
+                "summary": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.",
+                "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit", "Llion Jones", "Aidan N. Gomez", "Lukasz Kaiser", "Illia Polosukhin"],
+                "pdf_url": "https://arxiv.org/pdf/1706.03762",
+                "published": "2017-06-12T00:00:00",
+            },
+            {
+                "arxiv_id": "2005.14165",
+                "version_url": "https://arxiv.org/abs/2005.14165",
+                "title": "Language Models are Few-Shot Learners",
+                "summary": "We train GPT-3, an autoregressive language model with 175 billion parameters, and test its performance on a variety of NLP tasks.",
+                "authors": ["Tom B. Brown", "Benjamin Mann", "Nick Ryder", "Melanie Subbiah", "Jared Kaplan"],
+                "pdf_url": "https://arxiv.org/pdf/2005.14165",
+                "published": "2020-05-28T00:00:00",
             }
-        )
+        ]
     return papers
 
 
@@ -189,5 +221,19 @@ def search_classic_arxiv_papers(max_results: int = 3) -> list[dict]:
                 }
             )
     except Exception as e:
-        print(f"Error querying classic arXiv papers: {e}")
+        print(f"Error querying classic arXiv papers: {e}. Using fallback classic papers.")
+    
+    if not papers:
+        return [
+            {
+                "arxiv_id": "1706.03762",
+                "version_url": "https://arxiv.org/abs/1706.03762",
+                "title": "Attention Is All You Need",
+                "summary": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.",
+                "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit", "Llion Jones", "Aidan N. Gomez", "Lukasz Kaiser", "Illia Polosukhin"],
+                "pdf_url": "https://arxiv.org/pdf/1706.03762",
+                "published": "2017-06-12T00:00:00",
+                "is_classic": True
+            }
+        ]
     return papers

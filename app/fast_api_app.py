@@ -5,8 +5,9 @@ import sys
 from dotenv import load_dotenv
 
 load_dotenv()
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.templating import Jinja2Templates
 
 # Add project path to sys.path
@@ -23,6 +24,7 @@ from app.agent import app as adk_app
 from app.app_utils.db import (
     add_subscriber,
     clear_processed_papers_for_today,
+    get_active_subscribers,
     get_newsletter,
     get_newsletters,
     init_db,
@@ -30,6 +32,16 @@ from app.app_utils.db import (
 )
 
 app = FastAPI(title="Systems & AI Research Digest")
+
+security = HTTPBearer()
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify that the provided bearer token matches the configured ADMIN_API_KEY."""
+    admin_key = os.environ.get("ADMIN_API_KEY", "dev-token-key")
+    if credentials.credentials != admin_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return credentials.credentials
 
 # Set up templates directory
 templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -114,7 +126,7 @@ async def read_newsletter(request: Request, newsletter_id: int):
 
 
 @app.post("/api/trigger")
-async def trigger_curation():
+async def trigger_curation(token: str = Depends(verify_token)):
     """Programmatically run the ADK 2.0 multi-agent workflow to generate and dispatch newsletter."""
     try:
         # Clear papers processed today to allow re-running
@@ -198,3 +210,16 @@ async def unsubscribe(req: SubscribeRequest):
         raise HTTPException(
             status_code=500, detail="Failed to unsubscribe. Please try again."
         )
+
+
+@app.get("/api/subscribers")
+async def list_subscribers(token: str = Depends(verify_token)):
+    """Retrieve all active subscriber email addresses."""
+    try:
+        subscribers = get_active_subscribers()
+        return {"status": "success", "subscribers": subscribers}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve subscribers: {e!s}"
+        )
+
