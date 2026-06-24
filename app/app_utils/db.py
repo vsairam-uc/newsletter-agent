@@ -73,7 +73,36 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Newsletters table
+    # Check if we need to migrate newsletters table
+    cursor.execute("PRAGMA table_info(newsletters)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    
+    migrated = False
+    if columns and "html_content" in columns:
+        print("Migrating newsletters table to remove html_content column...")
+        try:
+            cursor.execute("ALTER TABLE newsletters RENAME TO newsletters_old")
+            cursor.execute("""
+                CREATE TABLE newsletters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    papers_json TEXT NOT NULL
+                )
+            """)
+            cursor.execute("""
+                INSERT INTO newsletters (id, date, title, papers_json)
+                SELECT id, date, title, papers_json FROM newsletters_old
+            """)
+            cursor.execute("DROP TABLE newsletters_old")
+            conn.commit()
+            migrated = True
+            print("Migration completed successfully.")
+        except Exception as migrate_err:
+            print(f"Error during newsletters table migration: {migrate_err}")
+            conn.rollback()
+
+    # Newsletters table (fallback if it didn't exist)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS newsletters (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,6 +133,13 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+    if migrated and bucket_name:
+        try:
+            upload_db_to_gcs(bucket_name)
+            print("Uploaded migrated database to GCS.")
+        except Exception as upload_err:
+            print(f"Error uploading migrated database to GCS: {upload_err}")
 
 
 def save_newsletter(title: str, html_content: str, papers: list[dict]) -> int:
