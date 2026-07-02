@@ -45,7 +45,7 @@ Orchestrated using the ADK 2.0 graph engine:
 *   **Jinja2 CSS Templates**: Generates a responsive newsletter layout (sleek dark/light theme) using the files in [templates/](file:///Users/vishwashrisairamvenkadathiriappasamy/vishwashrisairam/code/kaggle/newsletter-agent/app/templates/).
 
 ### 4. Dispatcher ([mailer.py](file:///Users/vishwashrisairamvenkadathiriappasamy/vishwashrisairam/code/kaggle/newsletter-agent/app/app_utils/mailer.py))
-*   Emails the newsletter using the **Resend API** (keys retrieved securely from Google Secret Manager).
+*   Emails the newsletter using standard **SMTP** (e.g., Gmail with App Passwords) or falls back to the **Resend API**.
 *   Saves local HTML backups.
 
 ### 5. Blog Frontend (Web Dashboard) ([fast_api_app.py](file:///Users/vishwashrisairamvenkadathiriappasamy/vishwashrisairam/code/kaggle/newsletter-agent/app/fast_api_app.py))
@@ -93,7 +93,31 @@ Verify your active credentials and project:
 gcloud config list
 ```
 
-### 4. Install Dependencies
+### 4. Environment Configuration (`.env`)
+Create a `.env` file in the root of the repository to configure your credentials and connection variables:
+
+```bash
+# GCP Configuration
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+LOGS_BUCKET_NAME=your-gcs-bucket-name
+
+# SMTP Configuration (Gmail App Passwords, etc.)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# Resend API Key for Email Delivery Fallback
+RESEND_API_KEY=your-resend-api-key
+
+# Test default email
+SUBSCRIBER_EMAIL=your-recipient-email@gmail.com
+```
+
+*Note: The `.env` file is gitignored by default to protect credentials.*
+
+### 5. Install Dependencies
 Declare your libraries in `pyproject.toml` (e.g., `arxiv`, `pypdf`, `fastapi`, `uvicorn`, `resend`, `jinja2`) and sync the environment:
 ```bash
 agents-cli install
